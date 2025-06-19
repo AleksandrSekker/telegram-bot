@@ -16,7 +16,7 @@ const enText =
 const itText =
   'Sviluppiamo e rappresentiamo nuovi volti, modelli freelance e coppie di modelli, creando percorsi\npersonalizzati attraverso collaborazioni internazionali e progetti esclusivi.';
 
-const photoAgencyUrl = 'https://i.postimg.cc/qRHMyP2y/IMG-2263.jpg';
+const photoAgencyUrl = process.env.PHOTO_AGENCY_URL!;
 
 const castingTextEn = "If you're 170 cm or taller and interested in modeling, fill out the form to apply.";
 const castingTextUa = 'Якщо твій зріст від 170 см і тобі цікаво працювати моделлю — заповни форму, щоб продовжити:';
