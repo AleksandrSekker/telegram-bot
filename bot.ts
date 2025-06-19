@@ -1,7 +1,5 @@
 import { Markup, Telegraf } from 'telegraf';
 import { config } from 'dotenv';
-import axios from 'axios';
-import sharp from 'sharp';
 
 config();
 const bot = new Telegraf(process.env.BOT_TOKEN!);
@@ -126,44 +124,15 @@ bot.start((ctx) =>
   ),
 );
 
-// Helper to download and round an image from a URL
-async function getRoundedImageBuffer(imageUrl: string, size = 500): Promise<Buffer> {
-  // Download image
-  const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-  const inputBuffer = Buffer.from(response.data);
-  // Create a circular mask SVG
-  const svg = `<svg width='${size}' height='${size}'><circle cx='${size / 2}' cy='${size / 2}' r='${
-    size / 2
-  }' fill='white'/></svg>`;
-  // Process image with sharp
-  return sharp(inputBuffer)
-    .resize(size, size)
-    .composite([{ input: Buffer.from(svg), blend: 'dest-in' }])
-    .png()
-    .toBuffer();
-}
-
 bot.action('english', async (ctx) => {
   await ctx.answerCbQuery();
-  try {
-    const roundedBuffer = await getRoundedImageBuffer(photoAgencyUrl, 500);
-    await ctx.replyWithPhoto(
-      { source: roundedBuffer },
-      {
-        caption: enText,
-        ...Markup.inlineKeyboard([[Markup.button.callback('Back', 'back_en')]]),
-      },
-    );
-  } catch (err) {
-    // fallback to original image if processing fails
-    await ctx.replyWithPhoto(
-      { url: photoAgencyUrl },
-      {
-        caption: enText,
-        ...Markup.inlineKeyboard([[Markup.button.callback('Back', 'back_en')]]),
-      },
-    );
-  }
+  await ctx.replyWithPhoto(
+    { url: photoAgencyUrl },
+    {
+      caption: enText,
+      ...Markup.inlineKeyboard([[Markup.button.callback('Back', 'back_en')]]),
+    },
+  );
   await ctx.reply(castingTextEn, Markup.inlineKeyboard([Markup.button.callback('Casting', 'casting_en')]));
 });
 
