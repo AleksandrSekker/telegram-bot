@@ -25,12 +25,34 @@ const castingTextIt =
 
 const ADMIN_ID = process.env.ADMIN_ID!;
 
+const PURPOSE_OPTIONS = {
+  en: [
+    "I'm looking for a mother agency",
+    'I want to be added to your model database',
+    "I'm part of a model couple",
+    'Other (please specify)',
+  ],
+  uk: [
+    'Я шукаю материнську-агенцію',
+    'Хочу потрапити до вашої бази моделей',
+    'Ми — модельна пара',
+    'Інше (вкажіть, будь ласка)',
+  ],
+  it: [
+    'Cerco una mother agency',
+    'Voglio essere inserito/a nel vostro database di modelli',
+    'Siamo una coppia di modelli',
+    'Altro (specifica per favore)',
+  ],
+};
+
 const formFields = [
   {
     key: 'purpose',
-    question_en: `What are you applying for?\n(Choose one or describe briefly)\n\n• I'm looking for a mother agency\n• I want to be added to your model database\n• I'm part of a model couple\n• Other (please specify)`,
-    question_uk: `З якою метою ви заповнюєте анкету?\n(Оберіть один варіант або опишіть коротко)\n\n• Я шукаю материнську-агенцію\n• Хочу потрапити до вашої бази моделей\n• Ми — модельна пара\n• Інше (вкажіть, будь ласка)`,
-    question_it: `Per quale motivo stai inviando la candidatura?\n(Scegli un'opzione o descrivi brevemente)\n\n• Cerco una mother agency\n• Voglio essere inserito/a nel vostro database di modelli\n• Siamo una coppia di modelli\n• Altro (specifica per favore)`,
+    question_en: 'What are you applying for? (Choose one or describe briefly)',
+    question_uk: 'З якою метою ви заповнюєте анкету? (Оберіть один варіант або опишіть коротко)',
+    question_it: "Per quale motivo stai inviando la candidatura? (Scegli un'opzione o descrivi brevemente)",
+    isPurpose: true,
   },
   { key: 'name', question_en: 'What is your Name?', question_uk: 'Як вас звати?', question_it: 'Come ti chiami?' },
   { key: 'age', question_en: 'How old are you?', question_uk: 'Скільки вам років?', question_it: 'Quanti anni hai?' },
@@ -88,7 +110,8 @@ const formFields = [
   },
 ];
 
-const userStates: Record<number, { step: number; data: any; lang: 'en' | 'uk' | 'it' }> = {};
+const userStates: Record<number, { step: number; data: any; lang: 'en' | 'uk' | 'it'; awaitingPurposeText: boolean }> =
+  {};
 
 bot.start((ctx) =>
   ctx.reply(
@@ -215,7 +238,7 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   let lang: 'en' | 'uk' | 'it' = 'en';
   if (ctx.match[0] === 'casting_uk') lang = 'uk';
   if (ctx.match[0] === 'casting_it') lang = 'it';
-  userStates[ctx.from.id] = { step: 0, data: {}, lang };
+  userStates[ctx.from.id] = { step: 0, data: {}, lang, awaitingPurposeText: false };
   const question = formFields[0][`question_${lang}`];
   await ctx.reply(question);
 });
@@ -273,6 +296,38 @@ bot.on(['text', 'photo'], async (ctx) => {
   if (!state) return;
 
   const field = formFields[state.step];
+
+  // Special handling for 'purpose' field
+  if (field.isPurpose && !state.awaitingPurposeText) {
+    // Show buttons for options
+    const options = PURPOSE_OPTIONS[state.lang];
+    await ctx.reply(
+      field[`question_${state.lang}`],
+      Markup.inlineKeyboard([
+        [Markup.button.callback(options[0], 'purpose_0')],
+        [Markup.button.callback(options[1], 'purpose_1')],
+        [Markup.button.callback(options[2], 'purpose_2')],
+        [Markup.button.callback(options[3], 'purpose_other')],
+      ]),
+    );
+    return;
+  }
+
+  if (state.awaitingPurposeText) {
+    // Save the custom text for 'purpose'
+    if ('text' in ctx.message && typeof ctx.message.text === 'string') {
+      state.data.purpose = ctx.message.text.trim();
+      state.step++;
+      state.awaitingPurposeText = false;
+      // Ask next question
+      if (state.step < formFields.length) {
+        const nextField = formFields[state.step];
+        const question = nextField[`question_${state.lang}`];
+        await ctx.reply(question);
+      }
+    }
+    return;
+  }
 
   if (field.isPhoto) {
     if (!('photo' in ctx.message) || !ctx.message.photo || ctx.message.photo.length === 0) {
@@ -337,6 +392,35 @@ bot.on(['text', 'photo'], async (ctx) => {
     }
     delete userStates[ctx.from.id];
   }
+});
+
+// Handle purpose button actions
+['purpose_0', 'purpose_1', 'purpose_2', 'purpose_other'].forEach((action, idx) => {
+  bot.action(action, async (ctx) => {
+    const state = userStates[ctx.from.id];
+    if (!state) return;
+    await ctx.answerCbQuery();
+    const options = PURPOSE_OPTIONS[state.lang];
+    if (action === 'purpose_other') {
+      state.awaitingPurposeText = true;
+      await ctx.reply(
+        state.lang === 'en'
+          ? 'Please describe your purpose:'
+          : state.lang === 'uk'
+          ? 'Будь ласка, опишіть вашу мету:'
+          : 'Per favore, descrivi il motivo:',
+      );
+    } else {
+      state.data.purpose = options[idx];
+      state.step++;
+      // Ask next question
+      if (state.step < formFields.length) {
+        const nextField = formFields[state.step];
+        const question = nextField[`question_${state.lang}`];
+        await ctx.reply(question);
+      }
+    }
+  });
 });
 
 bot.launch().then(() => {
