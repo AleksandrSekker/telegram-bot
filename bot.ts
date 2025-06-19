@@ -1,5 +1,7 @@
 import { Markup, Telegraf } from 'telegraf';
 import { config } from 'dotenv';
+import axios from 'axios';
+import sharp from 'sharp';
 
 config();
 const bot = new Telegraf(process.env.BOT_TOKEN!);
@@ -14,9 +16,9 @@ const enText =
 const itText =
   'Sviluppiamo e rappresentiamo nuovi volti, modelli freelance e coppie di modelli, creando percorsi\npersonalizzati attraverso collaborazioni internazionali e progetti esclusivi.';
 
-const photoAgencyUrl = 'https://i.postimg.cc/DwsYMHtx/IMG-2263.jpg';
+const photoAgencyUrl = 'https://i.postimg.cc/qRHMyP2y/IMG-2263.jpg';
 
-const castingTextEn = 'If you’re 170 cm or taller and interested in modeling, fill out the form to apply.';
+const castingTextEn = "If you're 170 cm or taller and interested in modeling, fill out the form to apply.";
 const castingTextUa = 'Якщо твій зріст від 170 см і тобі цікаво працювати моделлю — заповни форму, щоб продовжити:';
 const castingTextIt =
   'Se sei alto/a almeno 170 cm e sei interessato/a al mondo della moda, compila il modulo per candidarti.';
@@ -95,15 +97,44 @@ bot.start((ctx) =>
   ),
 );
 
+// Helper to download and round an image from a URL
+async function getRoundedImageBuffer(imageUrl: string, size = 500): Promise<Buffer> {
+  // Download image
+  const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+  const inputBuffer = Buffer.from(response.data);
+  // Create a circular mask SVG
+  const svg = `<svg width='${size}' height='${size}'><circle cx='${size / 2}' cy='${size / 2}' r='${
+    size / 2
+  }' fill='white'/></svg>`;
+  // Process image with sharp
+  return sharp(inputBuffer)
+    .resize(size, size)
+    .composite([{ input: Buffer.from(svg), blend: 'dest-in' }])
+    .png()
+    .toBuffer();
+}
+
 bot.action('english', async (ctx) => {
   await ctx.answerCbQuery();
-  await ctx.replyWithPhoto(
-    { url: photoAgencyUrl },
-    {
-      caption: enText,
-      ...Markup.inlineKeyboard([[Markup.button.callback('Back', 'back_en')]]),
-    },
-  );
+  try {
+    const roundedBuffer = await getRoundedImageBuffer(photoAgencyUrl, 500);
+    await ctx.replyWithPhoto(
+      { source: roundedBuffer },
+      {
+        caption: enText,
+        ...Markup.inlineKeyboard([[Markup.button.callback('Back', 'back_en')]]),
+      },
+    );
+  } catch (err) {
+    // fallback to original image if processing fails
+    await ctx.replyWithPhoto(
+      { url: photoAgencyUrl },
+      {
+        caption: enText,
+        ...Markup.inlineKeyboard([[Markup.button.callback('Back', 'back_en')]]),
+      },
+    );
+  }
   await ctx.reply(castingTextEn, Markup.inlineKeyboard([Markup.button.callback('Casting', 'casting_en')]));
 });
 
