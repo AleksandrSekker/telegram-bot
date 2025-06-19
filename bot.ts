@@ -239,8 +239,22 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   if (ctx.match[0] === 'casting_uk') lang = 'uk';
   if (ctx.match[0] === 'casting_it') lang = 'it';
   userStates[ctx.from.id] = { step: 0, data: {}, lang, awaitingPurposeText: false };
-  const question = formFields[0][`question_${lang}`];
-  await ctx.reply(question);
+  const field = formFields[0];
+  if (field.isPurpose) {
+    const options = PURPOSE_OPTIONS[lang];
+    await ctx.reply(
+      field[`question_${lang}`],
+      Markup.inlineKeyboard([
+        [Markup.button.callback(options[0], 'purpose_0')],
+        [Markup.button.callback(options[1], 'purpose_1')],
+        [Markup.button.callback(options[2], 'purpose_2')],
+        [Markup.button.callback(options[3], 'purpose_other')],
+      ]),
+    );
+  } else {
+    const question = field[`question_${lang}`];
+    await ctx.reply(question);
+  }
 });
 
 function validateField(key: string, value: string): string | null {
@@ -299,17 +313,7 @@ bot.on(['text', 'photo'], async (ctx) => {
 
   // Special handling for 'purpose' field
   if (field.isPurpose && !state.awaitingPurposeText) {
-    // Show buttons for options
-    const options = PURPOSE_OPTIONS[state.lang];
-    await ctx.reply(
-      field[`question_${state.lang}`],
-      Markup.inlineKeyboard([
-        [Markup.button.callback(options[0], 'purpose_0')],
-        [Markup.button.callback(options[1], 'purpose_1')],
-        [Markup.button.callback(options[2], 'purpose_2')],
-        [Markup.button.callback(options[3], 'purpose_other')],
-      ]),
-    );
+    // Do nothing, wait for button press
     return;
   }
 
