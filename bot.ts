@@ -26,6 +26,12 @@ const castingTextIt =
 const ADMIN_ID = process.env.ADMIN_ID!;
 
 const formFields = [
+  {
+    key: 'purpose',
+    question_en: `What are you applying for?\n(Choose one or describe briefly)\n\n• I'm looking for a mother agency\n• I want to be added to your model database\n• I'm part of a model couple\n• Other (please specify)`,
+    question_uk: `З якою метою ви заповнюєте анкету?\n(Оберіть один варіант або опишіть коротко)\n\n• Я шукаю материнську-агенцію\n• Хочу потрапити до вашої бази моделей\n• Ми — модельна пара\n• Інше (вкажіть, будь ласка)`,
+    question_it: `Per quale motivo stai inviando la candidatura?\n(Scegli un'opzione o descrivi brevemente)\n\n• Cerco una mother agency\n• Voglio essere inserito/a nel vostro database di modelli\n• Siamo una coppia di modelli\n• Altro (specifica per favore)`,
+  },
   { key: 'name', question_en: 'What is your Name?', question_uk: 'Як вас звати?', question_it: 'Come ti chiami?' },
   { key: 'age', question_en: 'How old are you?', question_uk: 'Скільки вам років?', question_it: 'Quanti anni hai?' },
   {
