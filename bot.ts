@@ -3,7 +3,7 @@ import { config } from 'dotenv';
 
 config();
 const bot = new Telegraf(process.env.BOT_TOKEN!);
-const textStep1En = `Hi, we're Sekker Model Group.\nScouting new faces, freelancers, and model couples for global placements and exclusive project work.\nLet's start — choose your language.\n`;
+const textStep1En = `Hi, we're Sekker Model Group.\nScouting new faces, freelancers, and model couples for global placements and exclusive project work.\nLet's start — choose your language.`;
 const textStep1Uk = `Привіт! Ми — Sekker Model Group.\nШукаємо нові обличчя, фриланс-моделей та модельні пари для міжнародних контрактів і ексклюзивних проєктів.\nПочнемо — оберіть мову.`;
 const textStep1It = `Ciao! Siamo Sekker Model Group.\nCerchiamo nuovi volti, modelli freelance e coppie di modelli per progetti esclusivi e collaborazioni internazionali.\nIniziamo — scegli la tua lingua.`;
 
@@ -103,8 +103,10 @@ const formFields = [
   },
 ];
 
-const userStates: Record<number, { step: number; data: any; lang: 'en' | 'uk' | 'it'; awaitingPurposeText: boolean }> =
-  {};
+const userStates: Record<
+  number,
+  { step: number; data: any; lang: 'en' | 'uk' | 'it'; awaitingPurposeText: boolean; waitingForForm: boolean }
+> = {};
 
 bot.start((ctx) =>
   ctx.reply(
@@ -205,168 +207,134 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   let lang: 'en' | 'uk' | 'it' = 'en';
   if (ctx.match[0] === 'casting_uk') lang = 'uk';
   if (ctx.match[0] === 'casting_it') lang = 'it';
-  userStates[ctx.from.id] = { step: 0, data: {}, lang, awaitingPurposeText: false };
-  const field = formFields[0];
-  if (field.isPurpose) {
-    const options = PURPOSE_OPTIONS[lang];
-    await ctx.reply(
-      field[`question_${lang}`],
-      Markup.inlineKeyboard([
-        [Markup.button.callback(options[0], 'purpose_0')],
-        [Markup.button.callback(options[1], 'purpose_1')],
-        [Markup.button.callback(options[2], 'purpose_2')],
-        [Markup.button.callback(options[3], 'purpose_other')],
-      ]),
-    );
-  } else {
-    const question = field[`question_${lang}`];
-    await ctx.reply(question);
-  }
+  userStates[ctx.from.id] = { step: 0, data: {}, lang, awaitingPurposeText: false, waitingForForm: true };
+
+  // Form texts for each language
+  const formTexts = {
+    en:
+      'Please answer any of the following questions in one message (all fields are optional, you can also attach a photo):\n' +
+      '\nName:' +
+      '\nCountry, city:' +
+      '\nAge:' +
+      '\nHeight:' +
+      '\nMeasurements:' +
+      '\nShoe size:' +
+      '\nEye color:' +
+      '\nHair color:' +
+      '\nPiercing, tattoo:' +
+      '\nYour modeling experience:' +
+      '\nInstagram link:',
+    uk:
+      'Відповідайте на будь-які з наступних питань одним повідомленням (усі поля необов’язкові, можна додати фото):\n' +
+      '\nІм’я:' +
+      '\nКраїна, місто:' +
+      '\nВік:' +
+      '\nЗріст:' +
+      '\nПараметри (груди-талія-стегна):' +
+      '\nРозмір взуття:' +
+      '\nКолір очей:' +
+      '\nКолір волосся:' +
+      '\nПірсинг, тату:' +
+      '\nВаш модельний досвід:' +
+      '\nПосилання на Instagram:',
+    it:
+      'Rispondi a una o più delle seguenti domande in un unico messaggio (tutti i campi sono opzionali, puoi anche allegare una foto):\n' +
+      '\nNome:' +
+      '\nPaese, città:' +
+      '\nEtà:' +
+      '\nAltezza:' +
+      '\nMisure (busto-vita-fianchi):' +
+      '\nNumero di scarpe:' +
+      '\nColore degli occhi:' +
+      '\nColore dei capelli:' +
+      '\nPiercing, tatuaggi:' +
+      '\nEsperienza come modello/a:' +
+      '\nLink Instagram:',
+  };
+
+  await ctx.reply(formTexts[lang]);
+
+  // Send purpose options as inline keyboard after the form
+  const options = PURPOSE_OPTIONS[lang];
+  await ctx.reply(
+    lang === 'en'
+      ? 'What are you applying for? (Choose one or skip)'
+      : lang === 'uk'
+      ? 'З якою метою ви заповнюєте анкету? (Оберіть один варіант або пропустіть)'
+      : "Per quale motivo stai inviando la candidatura? (Scegli un'opzione o salta)",
+    Markup.inlineKeyboard([
+      [Markup.button.callback(options[0], 'purpose_0')],
+      [Markup.button.callback(options[1], 'purpose_1')],
+      [Markup.button.callback(options[2], 'purpose_2')],
+      [Markup.button.callback(options[3], 'purpose_other')],
+      [Markup.button.callback(lang === 'en' ? 'Skip' : lang === 'uk' ? 'Пропустити' : 'Salta', 'purpose_skip')],
+    ]),
+  );
+
+  userStates[ctx.from.id].waitingForForm = true;
 });
 
-function validateField(key: string, value: string): string | null {
-  switch (key) {
-    case 'name':
-      return value.trim().length > 0 ? null : 'Name cannot be empty.';
-    case 'age': {
-      const age = Number(value);
-      if (!/^[0-9]+$/.test(value)) return 'Age must be a number.';
-      if (age < 10 || age > 100) return 'Age must be between 10 and 100.';
-      return null;
-    }
-    case 'country':
-      return value.trim().length > 0 ? null : 'Country cannot be empty.';
-    case 'height': {
-      const height = Number(value);
-      if (!/^[0-9]+$/.test(value)) return 'Height must be a number.';
-      if (height < 170 || height > 220) return 'Height must be between 170 and 220 cm.';
-      return null;
-    }
-    case 'measurements': {
-      const parts = value
-        .trim()
-        .split(/[,\s]+/)
-        .filter(Boolean);
-      if (parts.length !== 3 || !parts.every((p) => /^\d{2,3}$/.test(p))) {
-        return 'Please enter measurements as three numbers (bust, waist, hips) separated by commas and/or spaces.';
-      }
-      return null;
-    }
-    case 'instagram':
-      if (!/^@?\w{3,}$/.test(value.trim()))
-        return 'Please enter a valid Instagram username (at least 3 characters, may start with @).';
-      return null;
-    case 'telegram':
-      if (!/^@?\w{3,}$/.test(value.trim()))
-        return 'Please enter a valid Telegram username (at least 3 characters, may start with @).';
-      return null;
-    case 'experience':
-      return value.trim().length > 0 ? null : 'Work experience cannot be empty.';
-    case 'portfolio':
-      if (value.trim().toLowerCase() === 'none' || value.trim().toLowerCase() === 'nessuno') return null;
-      if (!/^https?:\/\/.+\..+/.test(value.trim())) return 'Please enter a valid URL or type "none".';
-      return null;
-    default:
-      return null;
-  }
-}
-
-// Handle answers for the form
+// Handle answers for the form (single message)
 bot.on(['text', 'photo'], async (ctx) => {
   const state = userStates[ctx.from.id];
-  if (!state) return;
+  if (!state || !state.waitingForForm) return;
 
-  const field = formFields[state.step];
+  let text = '';
+  let photoFileId: string | undefined = undefined;
 
-  // Special handling for 'purpose' field
-  if (field.isPurpose && !state.awaitingPurposeText) {
-    // Do nothing, wait for button press
-    return;
+  if ('photo' in ctx.message && ctx.message.photo && ctx.message.photo.length > 0) {
+    photoFileId = ctx.message.photo[ctx.message.photo.length - 1].file_id;
+    if ('caption' in ctx.message && ctx.message.caption) {
+      text = ctx.message.caption;
+    }
+  } else if ('text' in ctx.message && ctx.message.text) {
+    text = ctx.message.text;
   }
 
-  if (state.awaitingPurposeText) {
-    // Save the custom text for 'purpose'
-    if ('text' in ctx.message && typeof ctx.message.text === 'string') {
-      state.data.purpose = ctx.message.text.trim();
-      state.step++;
-      state.awaitingPurposeText = false;
-      // Ask next question
-      if (state.step < formFields.length) {
-        const nextField = formFields[state.step];
-        const question = nextField[`question_${state.lang}`];
-        await ctx.reply(question);
-      }
-    }
-    return;
-  }
-
-  if (field.isPhoto) {
-    if (!('photo' in ctx.message) || !ctx.message.photo || ctx.message.photo.length === 0) {
-      await ctx.reply(field[`question_${state.lang}`]);
-      return;
-    }
-    const photo = ctx.message.photo[ctx.message.photo.length - 1];
-    state.data.photoFileId = photo.file_id;
-    state.step++;
-  } else {
-    if ('text' in ctx.message && typeof ctx.message.text === 'string') {
-      const value = ctx.message.text.trim();
-      const validationError = validateField(field.key, value);
-      if (validationError) {
-        await ctx.reply(
-          (state.lang === 'en' ? 'Error: ' : state.lang === 'uk' ? 'Помилка: ' : 'Errore: ') + validationError,
-        );
-        await ctx.reply(field[`question_${state.lang}`]);
-        return;
-      }
-      state.data[field.key] = value;
-      state.step++;
-    } else {
-      await ctx.reply(field[`question_${state.lang}`]);
-      return;
-    }
-  }
-
-  if (state.step < formFields.length) {
-    const nextField = formFields[state.step];
-    const question = nextField[`question_${state.lang}`];
-    await ctx.reply(question);
-  } else {
-    const messageText = Object.entries(state.data)
-      .filter(([key]) => key !== 'photoFileId')
-      .map(([key, value]) => `${key}: ${value}`)
-      .join('\n');
+  if (!text.trim() && !photoFileId) {
     await ctx.reply(
       state.lang === 'en'
-        ? 'Your application has been received.\nFeel free to reach out if you have any questions.'
+        ? 'Please answer at least one question or attach a photo.'
         : state.lang === 'uk'
-        ? 'Вашу заявку прийнято.\nЯкщо у вас виникнуть запитання — не соромтеся звертатися.'
-        : 'La tua candidatura è stata ricevuta.\nPer qualsiasi domanda, non esitare a contattarci.',
+        ? 'Будь ласка, дайте відповідь хоча б на одне питання або додайте фото.'
+        : 'Per favore, rispondi almeno a una domanda o allega una foto.',
     );
-    try {
-      if (state.data.photoFileId) {
-        await bot.telegram.sendPhoto(ADMIN_ID, state.data.photoFileId, {
-          caption: `New casting application (${
-            state.lang === 'en' ? 'English' : state.lang === 'uk' ? 'Ukrainian' : 'Italian'
-          }):\n${messageText}`,
-        });
-      } else {
-        await bot.telegram.sendMessage(
-          ADMIN_ID,
-          `New casting application (${
-            state.lang === 'en' ? 'English' : state.lang === 'uk' ? 'Ukrainian' : 'Italian'
-          }):\n${messageText}`,
-        );
-      }
-    } catch (err) {
-      console.error('Failed to send message to admin:', err);
-    }
-    delete userStates[ctx.from.id];
+    return;
   }
+
+  // Compose message for admin
+  let adminText = `New casting application (${
+    state.lang === 'en' ? 'English' : state.lang === 'uk' ? 'Ukrainian' : 'Italian'
+  }):\n`;
+  if (state.data.purpose) {
+    adminText += `Purpose: ${state.data.purpose}\n`;
+  }
+  adminText += text;
+
+  try {
+    if (photoFileId) {
+      await bot.telegram.sendPhoto(ADMIN_ID, photoFileId, {
+        caption: adminText,
+      });
+    } else {
+      await bot.telegram.sendMessage(ADMIN_ID, adminText);
+    }
+  } catch (err) {
+    console.error('Failed to send message to admin:', err);
+  }
+
+  await ctx.reply(
+    state.lang === 'en'
+      ? 'Your application has been received. Feel free to reach out if you have any questions.'
+      : state.lang === 'uk'
+      ? 'Вашу заявку прийнято. Якщо у вас виникнуть запитання — не соромтеся звертатися.'
+      : 'La tua candidatura è stata ricevuta. Per qualsiasi domanda, non esitare a contattarci.',
+  );
+  delete userStates[ctx.from.id];
 });
 
 // Handle purpose button actions
-['purpose_0', 'purpose_1', 'purpose_2', 'purpose_other'].forEach((action, idx) => {
+['purpose_0', 'purpose_1', 'purpose_2', 'purpose_other', 'purpose_skip'].forEach((action, idx) => {
   bot.action(action, async (ctx) => {
     const state = userStates[ctx.from.id];
     if (!state) return;
@@ -381,16 +349,12 @@ bot.on(['text', 'photo'], async (ctx) => {
           ? 'Будь ласка, опишіть вашу мету:'
           : 'Per favore, descrivi il motivo:',
       );
+    } else if (action === 'purpose_skip') {
+      state.data.purpose = '';
     } else {
       state.data.purpose = options[idx];
-      state.step++;
-      // Ask next question
-      if (state.step < formFields.length) {
-        const nextField = formFields[state.step];
-        const question = nextField[`question_${state.lang}`];
-        await ctx.reply(question);
-      }
     }
+    // After purpose selection or skip, user can reply with the form
   });
 });
 
