@@ -211,12 +211,6 @@ bot.action('back_it', async (ctx) => {
 
 bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   await ctx.answerCbQuery();
-  await ctx.replyWithPhoto({
-    url: 'https://i.postimg.cc/mgF09tjK/IMG-2265.jpg',
-  });
-  await ctx.replyWithPhoto({
-    url: 'https://i.postimg.cc/k53LvqhG/IMG-2267.jpg',
-  });
   let lang: 'en' | 'uk' | 'it' = 'en';
   if (ctx.match[0] === 'casting_uk') lang = 'uk';
   if (ctx.match[0] === 'casting_it') lang = 'it';
@@ -269,6 +263,12 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   };
 
   await ctx.reply(formTexts[lang]);
+  await ctx.replyWithPhoto({
+    url: 'https://i.postimg.cc/mgF09tjK/IMG-2265.jpg',
+  });
+  await ctx.replyWithPhoto({
+    url: 'https://i.postimg.cc/k53LvqhG/IMG-2267.jpg',
+  });
   userStates[ctx.from.id].waitingForForm = true;
 });
 
