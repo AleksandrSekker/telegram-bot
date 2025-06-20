@@ -3,23 +3,18 @@ import { config } from 'dotenv';
 
 config();
 const bot = new Telegraf(process.env.BOT_TOKEN!);
-const textStep1En = `Hi, we're Sekker Model Group.\nScouting new faces, freelancers, and model couples for global placements and exclusive project work.\nLet's start — choose your language.`;
+const textStep1En = `Hi, we're Sekker Model Group.\nScouting new faces, freelancers, and model couples for global placements and exclusive project work.\nLet's start — choose your language.\n`;
 const textStep1Uk = `Привіт! Ми — Sekker Model Group.\nШукаємо нові обличчя, фриланс-моделей та модельні пари для міжнародних контрактів і ексклюзивних проєктів.\nПочнемо — оберіть мову.`;
 const textStep1It = `Ciao! Siamo Sekker Model Group.\nCerchiamo nuovi volti, modelli freelance e coppie di modelli per progetti esclusivi e collaborazioni internazionali.\nIniziamo — scegli la tua lingua.`;
 
 const ukText =
-  'Ми працюємо з новими обличчями, фрилансерами та модельними парами. Допомагаємо знайти\nміжнародні контракти та роботу в локальних проєктах.';
+  'Ми працюємо з новими обличчями, фрилансерами та модельними парами. Допомагаємо знайти\nміжнародні контракти та роботу в локальних проєктах.\nЯкщо твій зріст від 170 см і тобі цікаво працювати моделлю — заповни форму, щоб продовжити';
 const enText =
-  'We develop and manage new faces, freelancers, and model couples, creating tailored pathways through\nglobal placements and exclusive projects.';
+  "We develop and manage new faces, freelancers, and model couples, creating tailored pathways through\nglobal placements and exclusive projects.\nIf you're 170 cm or taller and interested in modeling, fill out the form to apply.";
 const itText =
-  'Sviluppiamo e rappresentiamo nuovi volti, modelli freelance e coppie di modelli, creando percorsi\npersonalizzati attraverso collaborazioni internazionali e progetti esclusivi.';
+  'Sviluppiamo e rappresentiamo nuovi volti, modelli freelance e coppie di modelli, creando percorsi\npersonalizzati attraverso collaborazioni internazionali e progetti esclusivi.\nSe sei alto/a almeno 170 cm e sei interessato/a al mondo della moda, compila il modulo per candidarti.';
 
 const photoAgencyUrl = 'https://i.postimg.cc/kGFc7Pvc/IMAGE-2025-06-19-22-27-03.jpg';
-
-const castingTextEn = "If you're 170 cm or taller and interested in modeling, fill out the form to apply.";
-const castingTextUa = 'Якщо твій зріст від 170 см і тобі цікаво працювати моделлю — заповни форму, щоб продовжити:';
-const castingTextIt =
-  'Se sei alto/a almeno 170 cm e sei interessato/a al mondo della moda, compila il modulo per candidarti.';
 
 const ADMIN_ID = process.env.ADMIN_ID!;
 
@@ -130,10 +125,11 @@ bot.action('english', async (ctx) => {
     { url: photoAgencyUrl },
     {
       caption: enText,
-      ...Markup.inlineKeyboard([[Markup.button.callback('Back', 'back_en')]]),
+      ...Markup.inlineKeyboard([
+        [Markup.button.callback('Back', 'back_en'), Markup.button.callback('Casting', 'casting_en')],
+      ]),
     },
   );
-  await ctx.reply(castingTextEn, Markup.inlineKeyboard([Markup.button.callback('Casting', 'casting_en')]));
 });
 
 bot.action('ukrainian', async (ctx) => {
@@ -142,10 +138,11 @@ bot.action('ukrainian', async (ctx) => {
     { url: photoAgencyUrl },
     {
       caption: ukText,
-      ...Markup.inlineKeyboard([[Markup.button.callback('Назад', 'back_uk')]]),
+      ...Markup.inlineKeyboard([
+        [Markup.button.callback('Назад', 'back_uk'), Markup.button.callback('Кастинг', 'casting_uk')],
+      ]),
     },
   );
-  await ctx.reply(castingTextUa, Markup.inlineKeyboard([Markup.button.callback('Кастинг', 'casting_uk')]));
 });
 
 bot.action('italian', async (ctx) => {
@@ -154,10 +151,11 @@ bot.action('italian', async (ctx) => {
     { url: photoAgencyUrl },
     {
       caption: itText,
-      ...Markup.inlineKeyboard([[Markup.button.callback('Indietro', 'back_it')]]),
+      ...Markup.inlineKeyboard([
+        [Markup.button.callback('Indietro', 'back_it'), Markup.button.callback('Candidati', 'casting_it')],
+      ]),
     },
   );
-  await ctx.reply(castingTextIt, Markup.inlineKeyboard([Markup.button.callback('Candidati', 'casting_it')]));
 });
 
 bot.action('back_en', async (ctx) => {
