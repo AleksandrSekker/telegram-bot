@@ -264,12 +264,6 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   };
 
   await ctx.reply(formTexts[lang]);
-  await ctx.replyWithPhoto({
-    url: 'https://i.postimg.cc/mgF09tjK/IMG-2265.jpg',
-  });
-  await ctx.replyWithPhoto({
-    url: 'https://i.postimg.cc/k53LvqhG/IMG-2267.jpg',
-  });
   userStates[ctx.from.id].waitingForForm = true;
 });
 
