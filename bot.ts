@@ -3,9 +3,9 @@ import { config } from 'dotenv';
 
 config();
 const bot = new Telegraf(process.env.BOT_TOKEN!);
-const textStep1En = `Hi, we're Sekker Model Group.\nScouting new faces, freelancers, and model couples for global placements and exclusive project work.\nLet's start — choose your language.`;
-const textStep1Uk = `Привіт! Ми — Sekker Model Group.\nШукаємо нові обличчя, фриланс-моделей та модельні пари для міжнародних контрактів і ексклюзивних проєктів.\nПочнемо — оберіть мову.`;
-const textStep1It = `Ciao! Siamo Sekker Model Group.\nCerchiamo nuovi volti, modelli freelance e coppie di modelli per progetti esclusivi e collaborazioni internazionali.\nIniziamo — scegli la tua lingua.`;
+const textStep1En = `Hi,\nwe're Sekker Model Group.\nScouting new faces, freelancers, and model couples for global placements and exclusive project work.\nLet's start — choose your language.`;
+const textStep1Uk = `Привіт!\nМи — Sekker Model Group.\nШукаємо нові обличчя, фриланс-моделей та модельні пари для міжнародних контрактів і ексклюзивних проєктів.\nПочнемо — оберіть мову.`;
+const textStep1It = `Ciao!\nSiamo Sekker Model Group.\nCerchiamo nuovi volti, modelli freelance e coppie di modelli per progetti esclusivi e collaborazioni internazionali.\nIniziamo — scegli la tua lingua.`;
 
 const ukText =
   'Ми працюємо з новими обличчями, фрилансерами та модельними парами. Допомагаємо знайти\nміжнародні контракти та роботу в локальних проєктах.\nЯкщо твій зріст від 170 см і тобі цікаво працювати моделлю — заповни форму, щоб продовжити';
@@ -211,6 +211,12 @@ bot.action('back_it', async (ctx) => {
 
 bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   await ctx.answerCbQuery();
+  await ctx.replyWithPhoto({
+    url: 'https://i.postimg.cc/mgF09tjK/IMG-2265.jpg',
+  });
+  await ctx.replyWithPhoto({
+    url: 'https://i.postimg.cc/k53LvqhG/IMG-2267.jpg',
+  });
   let lang: 'en' | 'uk' | 'it' = 'en';
   if (ctx.match[0] === 'casting_uk') lang = 'uk';
   if (ctx.match[0] === 'casting_it') lang = 'it';
@@ -219,7 +225,7 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   // Form texts for each language
   const formTexts = {
     en:
-      'Please answer any of the following questions in one message (all fields are optional, you can also attach a photo):\n' +
+      'Please answer any of the following questions in one message (all fields are optional, you must also attach a photo):\n' +
       '\nName:' +
       '\nCountry, city:' +
       '\nAge:' +
@@ -230,9 +236,10 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
       '\nHair color:' +
       '\nPiercing, tattoo:' +
       '\nYour modeling experience:' +
-      '\nInstagram link:',
+      '\nInstagram link:' +
+      '\nAdd a link to your model book and snaps',
     uk:
-      "Відповідайте на будь-які з наступних питань одним повідомленням (усі поля необов'язкові, можна додати фото):\n" +
+      "Відповідайте на будь-які з наступних питань одним повідомленням (усі поля необов'язкові, обов'язково додайте фото):\n" +
       "\nІм'я:" +
       '\nКраїна, місто:' +
       '\nВік:' +
@@ -243,9 +250,10 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
       '\nКолір волосся:' +
       '\nПірсинг, тату:' +
       '\nВаш модельний досвід:' +
-      '\nПосилання на Instagram:',
+      '\nПосилання на Instagram:' +
+      '\nДодайте посилання на ваш бук і снепи',
     it:
-      'Rispondi a una o più delle seguenti domande in un unico messaggio (tutti i campi sono opzionali, puoi anche allegare una foto):\n' +
+      'Rispondi a una o più delle seguenti domande in un unico messaggio (tutti i campi sono opzionali, devi anche allegare una foto):\n' +
       '\nNome:' +
       '\nPaese, città:' +
       '\nEtà:' +
@@ -256,7 +264,8 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
       '\nColore dei capelli:' +
       '\nPiercing, tatuaggi:' +
       '\nEsperienza come modello/a:' +
-      '\nLink Instagram:',
+      '\nLink Instagram:' +
+      '\nAggiungi un link al tuo book e ai tuoi snaps',
   };
 
   await ctx.reply(formTexts[lang]);
@@ -280,13 +289,25 @@ bot.on(['text', 'photo'], async (ctx) => {
     text = ctx.message.text;
   }
 
-  if (!text.trim() && !photoFileId) {
+  // PHOTO REQUIRED
+  if (!photoFileId) {
     await ctx.reply(
       state.lang === 'en'
-        ? 'Please answer at least one question or attach a photo.'
+        ? 'Please attach a photo to your application.'
         : state.lang === 'uk'
-        ? 'Будь ласка, дайте відповідь хоча б на одне питання або додайте фото.'
-        : 'Per favore, rispondi almeno a una domanda o allega una foto.',
+        ? 'Будь ласка, додайте фото до вашої заявки.'
+        : 'Per favore, allega una foto alla tua candidatura.',
+    );
+    return;
+  }
+
+  if (!text.trim()) {
+    await ctx.reply(
+      state.lang === 'en'
+        ? 'Please answer at least one question in text.'
+        : state.lang === 'uk'
+        ? 'Будь ласка, дайте відповідь хоча б на одне питання текстом.'
+        : 'Per favore, rispondi almeno a una domanda in testo.',
     );
     return;
   }
