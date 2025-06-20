@@ -112,6 +112,7 @@ const userStates: Record<
     awaitingPurposeText: boolean;
     waitingForForm: boolean;
     waitingForPurpose?: boolean;
+    waitingForPhoto?: boolean;
   }
 > = {};
 
@@ -219,7 +220,7 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   // Form texts for each language
   const formTexts = {
     en:
-      'Please answer any of the following questions in one message (all fields are optional, you must also attach a photo):\n' +
+      'Please answer any of the following questions in one message (all fields are optional):\n' +
       '\nName:' +
       '\nCountry, city:' +
       '\nAge:' +
@@ -233,7 +234,7 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
       '\nInstagram link:' +
       '\nAdd a link to your model book and snaps',
     uk:
-      "Відповідайте на будь-які з наступних питань одним повідомленням (усі поля необов'язкові, обов'язково додайте фото):\n" +
+      "Відповідайте на будь-які з наступних питань одним повідомленням (усі поля необов'язкові):\n" +
       "\nІм'я:" +
       '\nКраїна, місто:' +
       '\nВік:' +
@@ -247,7 +248,7 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
       '\nПосилання на Instagram:' +
       '\nДодайте посилання на ваш бук і снепи',
     it:
-      'Rispondi a una o più delle seguenti domande in un unico messaggio (tutti i campi sono opzionali, devi anche allegare una foto):\n' +
+      'Rispondi a una o più delle seguenti domande in un unico messaggio (tutti i campi sono opzionali):\n' +
       '\nNome:' +
       '\nPaese, città:' +
       '\nEtà:' +
@@ -289,18 +290,6 @@ bot.on(['text', 'photo'], async (ctx) => {
     text = ctx.message.text;
   }
 
-  // PHOTO REQUIRED
-  if (!photoFileId) {
-    await ctx.reply(
-      state.lang === 'en'
-        ? 'Please attach a photo to your application.'
-        : state.lang === 'uk'
-        ? 'Будь ласка, додайте фото до вашої заявки.'
-        : 'Per favore, allega una foto alla tua candidatura.',
-    );
-    return;
-  }
-
   if (!text.trim()) {
     await ctx.reply(
       state.lang === 'en'
@@ -312,10 +301,30 @@ bot.on(['text', 'photo'], async (ctx) => {
     return;
   }
 
-  // Save user's answers and photo in state
+  // Save user's answers in state, move to photo step
   state.data.formText = text;
-  state.data.photoFileId = photoFileId;
   state.waitingForForm = false;
+  state.waitingForPhoto = true;
+
+  // Prompt for photo with language-specific text and show example photos
+  const photoPrompt =
+    state.lang === 'en'
+      ? 'Please attach a photo of your face without makeup or filters.\nTake it during the day, facing a window in natural light.'
+      : state.lang === 'uk'
+      ? 'Будь ласка, прикріпіть фото вашого обличчя без макіяжу та фільтрів.\nЗробіть його вдень, повернувши обличчя до вікна при природному освітленні.'
+      : 'Ti preghiamo di allegare una foto del tuo viso senza trucco né filtri.\nScattala durante il giorno, rivolto/a verso una finestra con luce naturale.';
+  await ctx.reply(photoPrompt);
+  await ctx.replyWithPhoto({ url: 'https://i.postimg.cc/mgF09tjK/IMG-2265.jpg' });
+  await ctx.replyWithPhoto({ url: 'https://i.postimg.cc/k53LvqhG/IMG-2267.jpg' });
+});
+
+// Handle photo upload after form
+bot.on('photo', async (ctx) => {
+  const state = userStates[ctx.from.id];
+  if (!state || !state.waitingForPhoto) return;
+  const photoFileId = ctx.message.photo[ctx.message.photo.length - 1].file_id;
+  state.data.photoFileId = photoFileId;
+  state.waitingForPhoto = false;
   state.waitingForPurpose = true;
 
   // Show purpose options as inline keyboard
