@@ -264,6 +264,46 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   userStates[ctx.from.id].waitingForForm = true;
 });
 
+// Handle custom purpose text after 'purpose_other'
+bot.on('text', async (ctx) => {
+  const state = userStates[ctx.from.id];
+  if (!state || !state.awaitingPurposeText) return;
+  state.data.purpose = ctx.message.text.trim();
+  state.awaitingPurposeText = false;
+  state.waitingForPurpose = false;
+
+  // Send to admin
+  let adminText = `New casting application (${
+    state.lang === 'en' ? 'English' : state.lang === 'uk' ? 'Ukrainian' : 'Italian'
+  }):\n`;
+  if (state.data.purpose) {
+    adminText += `Purpose: ${state.data.purpose}\n`;
+  }
+  if (state.data.formText) {
+    adminText += `\nForm answers:\n${state.data.formText}\n`;
+  }
+  try {
+    if (state.data.photoFileId) {
+      await bot.telegram.sendPhoto(ADMIN_ID, state.data.photoFileId, {
+        caption: adminText,
+      });
+    } else {
+      await bot.telegram.sendMessage(ADMIN_ID, adminText);
+    }
+  } catch (err) {
+    console.error('Failed to send message to admin:', err);
+  }
+  await ctx.reply(
+    state.lang === 'en'
+      ? 'Your application has been received. Feel free to reach out if you have any questions.'
+      : state.lang === 'uk'
+      ? 'Вашу заявку прийнято. Якщо у вас виникнуть запитання — не соромтеся звертатися.'
+      : 'La tua candidatura è stata ricevuta. Per qualsiasi domanda, non esitare a contattarci.',
+  );
+  delete userStates[ctx.from.id];
+  return; // Prevent further processing
+});
+
 // Handle answers for the form (single message)
 bot.on(['text'], async (ctx) => {
   const state = userStates[ctx.from.id];
@@ -382,45 +422,6 @@ bot.on('photo', async (ctx) => {
     );
     delete userStates[ctx.from.id];
   });
-});
-
-// Handle custom purpose text after 'purpose_other'
-bot.on('text', async (ctx) => {
-  const state = userStates[ctx.from.id];
-  if (!state || !state.awaitingPurposeText) return;
-  state.data.purpose = ctx.message.text.trim();
-  state.awaitingPurposeText = false;
-  state.waitingForPurpose = false;
-
-  // Send to admin
-  let adminText = `New casting application (${
-    state.lang === 'en' ? 'English' : state.lang === 'uk' ? 'Ukrainian' : 'Italian'
-  }):\n`;
-  if (state.data.purpose) {
-    adminText += `Purpose: ${state.data.purpose}\n`;
-  }
-  if (state.data.formText) {
-    adminText += `\nForm answers:\n${state.data.formText}\n`;
-  }
-  try {
-    if (state.data.photoFileId) {
-      await bot.telegram.sendPhoto(ADMIN_ID, state.data.photoFileId, {
-        caption: adminText,
-      });
-    } else {
-      await bot.telegram.sendMessage(ADMIN_ID, adminText);
-    }
-  } catch (err) {
-    console.error('Failed to send message to admin:', err);
-  }
-  await ctx.reply(
-    state.lang === 'en'
-      ? 'Your application has been received. Feel free to reach out if you have any questions.'
-      : state.lang === 'uk'
-      ? 'Вашу заявку прийнято. Якщо у вас виникнуть запитання — не соромтеся звертатися.'
-      : 'La tua candidatura è stata ricevuta. Per qualsiasi domanda, non esitare a contattarci.',
-  );
-  delete userStates[ctx.from.id];
 });
 
 bot.launch().then(() => {
