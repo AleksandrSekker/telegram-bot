@@ -264,10 +264,12 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   userStates[ctx.from.id].waitingForForm = true;
 });
 
-// Handle custom purpose text after 'purpose_other'
+// Handle custom purpose text and form answers in a single handler
 bot.on('text', async (ctx) => {
   const state = userStates[ctx.from.id];
   if (!state) return;
+
+  // Handle custom purpose text
   if (state.awaitingPurposeText) {
     state.data.purpose = ctx.message.text.trim();
     state.awaitingPurposeText = false;
@@ -304,44 +306,42 @@ bot.on('text', async (ctx) => {
     delete userStates[ctx.from.id];
     return;
   }
-});
 
-// Handle answers for the form (single message)
-bot.on(['text'], async (ctx) => {
-  const state = userStates[ctx.from.id];
-  if (!state || !state.waitingForForm) return;
+  // Handle form step
+  if (state.waitingForForm) {
+    let text = '';
+    if ('text' in ctx.message && ctx.message.text) {
+      text = ctx.message.text;
+    }
 
-  let text = '';
-  if ('text' in ctx.message && ctx.message.text) {
-    text = ctx.message.text;
-  }
+    if (!text.trim()) {
+      await ctx.reply(
+        state.lang === 'en'
+          ? 'Please answer at least one question in text.'
+          : state.lang === 'uk'
+          ? 'Будь ласка, дайте відповідь хоча б на одне питання текстом.'
+          : 'Per favore, rispondi almeno a una domanda in testo.',
+      );
+      return;
+    }
 
-  if (!text.trim()) {
-    await ctx.reply(
+    // Save user's answers in state, move to photo step
+    state.data.formText = text;
+    state.waitingForForm = false;
+    state.waitingForPhoto = true;
+
+    // Prompt for photo with language-specific text and show example photos
+    const photoPrompt =
       state.lang === 'en'
-        ? 'Please answer at least one question in text.'
+        ? 'Please attach a photo of your face without makeup or filters.\nTake it during the day, facing a window in natural light.'
         : state.lang === 'uk'
-        ? 'Будь ласка, дайте відповідь хоча б на одне питання текстом.'
-        : 'Per favore, rispondi almeno a una domanda in testo.',
-    );
+        ? 'Будь ласка, прикріпіть фото вашого обличчя без макіяжу та фільтрів.\nЗробіть його вдень, повернувши обличчя до вікна при природному освітленні.'
+        : 'Ti preghiamo di allegare una foto del tuo viso senza trucco né filtri.\nScattala durante il giorno, rivolto/a verso una finestra con luce naturale.';
+    await ctx.reply(photoPrompt);
+    await ctx.replyWithPhoto({ url: 'https://i.postimg.cc/mgF09tjK/IMG-2265.jpg' });
+    await ctx.replyWithPhoto({ url: 'https://i.postimg.cc/k53LvqhG/IMG-2267.jpg' });
     return;
   }
-
-  // Save user's answers in state, move to photo step
-  state.data.formText = text;
-  state.waitingForForm = false;
-  state.waitingForPhoto = true;
-
-  // Prompt for photo with language-specific text and show example photos
-  const photoPrompt =
-    state.lang === 'en'
-      ? 'Please attach a photo of your face without makeup or filters.\nTake it during the day, facing a window in natural light.'
-      : state.lang === 'uk'
-      ? 'Будь ласка, прикріпіть фото вашого обличчя без макіяжу та фільтрів.\nЗробіть його вдень, повернувши обличчя до вікна при природному освітленні.'
-      : 'Ti preghiamo di allegare una foto del tuo viso senza trucco né filtri.\nScattala durante il giorno, rivolto/a verso una finestra con luce naturale.';
-  await ctx.reply(photoPrompt);
-  await ctx.replyWithPhoto({ url: 'https://i.postimg.cc/mgF09tjK/IMG-2265.jpg' });
-  await ctx.replyWithPhoto({ url: 'https://i.postimg.cc/k53LvqhG/IMG-2267.jpg' });
 });
 
 // Handle photo upload after form
