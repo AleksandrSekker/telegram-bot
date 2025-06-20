@@ -268,19 +268,12 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
 });
 
 // Handle answers for the form (single message)
-bot.on(['text', 'photo'], async (ctx) => {
+bot.on(['text'], async (ctx) => {
   const state = userStates[ctx.from.id];
   if (!state || !state.waitingForForm) return;
 
   let text = '';
-  let photoFileId: string | undefined = undefined;
-
-  if ('photo' in ctx.message && ctx.message.photo && ctx.message.photo.length > 0) {
-    photoFileId = ctx.message.photo[ctx.message.photo.length - 1].file_id;
-    if ('caption' in ctx.message && ctx.message.caption) {
-      text = ctx.message.caption;
-    }
-  } else if ('text' in ctx.message && ctx.message.text) {
+  if ('text' in ctx.message && ctx.message.text) {
     text = ctx.message.text;
   }
 
