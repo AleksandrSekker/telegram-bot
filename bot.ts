@@ -260,24 +260,6 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   };
 
   await ctx.reply(formTexts[lang]);
-
-  // Send purpose options as inline keyboard after the form
-  const options = PURPOSE_OPTIONS[lang];
-  await ctx.reply(
-    lang === 'en'
-      ? 'What are you applying for? (Choose one or skip)'
-      : lang === 'uk'
-      ? 'З якою метою ви заповнюєте анкету? (Оберіть один варіант або пропустіть)'
-      : "Per quale motivo stai inviando la candidatura? (Scegli un'opzione o salta)",
-    Markup.inlineKeyboard([
-      [Markup.button.callback(options[0], 'purpose_0')],
-      [Markup.button.callback(options[1], 'purpose_1')],
-      [Markup.button.callback(options[2], 'purpose_2')],
-      [Markup.button.callback(options[3], 'purpose_other')],
-      [Markup.button.callback(lang === 'en' ? 'Skip' : lang === 'uk' ? 'Пропустити' : 'Salta', 'purpose_skip')],
-    ]),
-  );
-
   userStates[ctx.from.id].waitingForForm = true;
 });
 
