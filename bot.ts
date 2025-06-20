@@ -220,8 +220,7 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   // Form texts for each language
   const formTexts = {
     en:
-      'Please answer any of the following questions in one message (all fields are optional):\n' +
-      '\nName:' +
+      'Name:' +
       '\nCountry, city:' +
       '\nAge:' +
       '\nHeight:' +
@@ -234,8 +233,7 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
       '\nInstagram link:' +
       '\nAdd a link to your model book and snaps',
     uk:
-      "Відповідайте на будь-які з наступних питань одним повідомленням (усі поля необов'язкові):\n" +
-      "\nІм'я:" +
+      "Ім'я:" +
       '\nКраїна, місто:' +
       '\nВік:' +
       '\nЗріст:' +
@@ -248,8 +246,7 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
       '\nПосилання на Instagram:' +
       '\nДодайте посилання на ваш бук і снепи',
     it:
-      'Rispondi a una o più delle seguenti domande in un unico messaggio (tutti i campi sono opzionali):\n' +
-      '\nNome:' +
+      'Nome:' +
       '\nPaese, città:' +
       '\nEtà:' +
       '\nAltezza:' +
@@ -370,7 +367,9 @@ bot.on('photo', async (ctx) => {
     if (state.data.purpose) {
       adminText += `Purpose: ${state.data.purpose}\n`;
     }
-    adminText += state.data.formText || '';
+    if (state.data.formText) {
+      adminText += `\nForm answers:\n${state.data.formText}\n`;
+    }
     try {
       if (state.data.photoFileId) {
         await bot.telegram.sendPhoto(ADMIN_ID, state.data.photoFileId, {
@@ -408,7 +407,9 @@ bot.on('text', async (ctx) => {
   if (state.data.purpose) {
     adminText += `Purpose: ${state.data.purpose}\n`;
   }
-  adminText += state.data.formText || '';
+  if (state.data.formText) {
+    adminText += `\nForm answers:\n${state.data.formText}\n`;
+  }
   try {
     if (state.data.photoFileId) {
       await bot.telegram.sendPhoto(ADMIN_ID, state.data.photoFileId, {
