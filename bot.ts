@@ -14,7 +14,7 @@ const enText =
 const itText =
   'Sviluppiamo e rappresentiamo nuovi volti, modelli freelance e coppie di modelli, creando percorsi\npersonalizzati attraverso collaborazioni internazionali e progetti esclusivi.\nSe sei alto/a almeno 170 cm e sei interessato/a al mondo della moda, compila il modulo per candidarti.';
 
-const photoAgencyUrl = 'https://i.postimg.cc/kGFc7Pvc/IMAGE-2025-06-19-22-27-03.jpg';
+const photoAgencyUrl = 'https://i.postimg.cc/mrb8gJFt/2025-06-19-20-27-17.png';
 
 const ADMIN_ID = process.env.ADMIN_ID!;
 
