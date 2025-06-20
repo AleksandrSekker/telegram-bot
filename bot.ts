@@ -105,7 +105,14 @@ const formFields = [
 
 const userStates: Record<
   number,
-  { step: number; data: any; lang: 'en' | 'uk' | 'it'; awaitingPurposeText: boolean; waitingForForm: boolean }
+  {
+    step: number;
+    data: any;
+    lang: 'en' | 'uk' | 'it';
+    awaitingPurposeText: boolean;
+    waitingForForm: boolean;
+    waitingForPurpose?: boolean;
+  }
 > = {};
 
 bot.start((ctx) =>
@@ -225,8 +232,8 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
       '\nYour modeling experience:' +
       '\nInstagram link:',
     uk:
-      'Відповідайте на будь-які з наступних питань одним повідомленням (усі поля необов’язкові, можна додати фото):\n' +
-      '\nІм’я:' +
+      "Відповідайте на будь-які з наступних питань одним повідомленням (усі поля необов'язкові, можна додати фото):\n" +
+      "\nІм'я:" +
       '\nКраїна, місто:' +
       '\nВік:' +
       '\nЗріст:' +
@@ -302,44 +309,43 @@ bot.on(['text', 'photo'], async (ctx) => {
     return;
   }
 
-  // Compose message for admin
-  let adminText = `New casting application (${
-    state.lang === 'en' ? 'English' : state.lang === 'uk' ? 'Ukrainian' : 'Italian'
-  }):\n`;
-  if (state.data.purpose) {
-    adminText += `Purpose: ${state.data.purpose}\n`;
-  }
-  adminText += text;
+  // Save user's answers and photo in state
+  state.data.formText = text;
+  state.data.photoFileId = photoFileId;
+  state.waitingForForm = false;
+  state.waitingForPurpose = true;
 
-  try {
-    if (photoFileId) {
-      await bot.telegram.sendPhoto(ADMIN_ID, photoFileId, {
-        caption: adminText,
-      });
-    } else {
-      await bot.telegram.sendMessage(ADMIN_ID, adminText);
-    }
-  } catch (err) {
-    console.error('Failed to send message to admin:', err);
-  }
-
+  // Show purpose options as inline keyboard
+  const options = PURPOSE_OPTIONS[state.lang];
   await ctx.reply(
     state.lang === 'en'
-      ? 'Your application has been received. Feel free to reach out if you have any questions.'
+      ? 'What are you applying for? (Choose one or skip)'
       : state.lang === 'uk'
-      ? 'Вашу заявку прийнято. Якщо у вас виникнуть запитання — не соромтеся звертатися.'
-      : 'La tua candidatura è stata ricevuta. Per qualsiasi domanda, non esitare a contattarci.',
+      ? 'З якою метою ви заповнюєте анкету? (Оберіть один варіант або пропустіть)'
+      : "Per quale motivo stai inviando la candidatura? (Scegli un'opzione o salta)",
+    Markup.inlineKeyboard([
+      [Markup.button.callback(options[0], 'purpose_0')],
+      [Markup.button.callback(options[1], 'purpose_1')],
+      [Markup.button.callback(options[2], 'purpose_2')],
+      [Markup.button.callback(options[3], 'purpose_other')],
+      [
+        Markup.button.callback(
+          state.lang === 'en' ? 'Skip' : state.lang === 'uk' ? 'Пропустити' : 'Salta',
+          'purpose_skip',
+        ),
+      ],
+    ]),
   );
-  delete userStates[ctx.from.id];
 });
 
 // Handle purpose button actions
 ['purpose_0', 'purpose_1', 'purpose_2', 'purpose_other', 'purpose_skip'].forEach((action, idx) => {
   bot.action(action, async (ctx) => {
     const state = userStates[ctx.from.id];
-    if (!state) return;
+    if (!state || !state.waitingForPurpose) return;
     await ctx.answerCbQuery();
     const options = PURPOSE_OPTIONS[state.lang];
+    let purpose = '';
     if (action === 'purpose_other') {
       state.awaitingPurposeText = true;
       await ctx.reply(
@@ -349,13 +355,80 @@ bot.on(['text', 'photo'], async (ctx) => {
           ? 'Будь ласка, опишіть вашу мету:'
           : 'Per favore, descrivi il motivo:',
       );
+      return;
     } else if (action === 'purpose_skip') {
-      state.data.purpose = '';
+      purpose = '';
     } else {
-      state.data.purpose = options[idx];
+      purpose = options[idx];
     }
-    // After purpose selection or skip, user can reply with the form
+    state.data.purpose = purpose;
+    state.waitingForPurpose = false;
+
+    // Send to admin
+    let adminText = `New casting application (${
+      state.lang === 'en' ? 'English' : state.lang === 'uk' ? 'Ukrainian' : 'Italian'
+    }):\n`;
+    if (state.data.purpose) {
+      adminText += `Purpose: ${state.data.purpose}\n`;
+    }
+    adminText += state.data.formText || '';
+    try {
+      if (state.data.photoFileId) {
+        await bot.telegram.sendPhoto(ADMIN_ID, state.data.photoFileId, {
+          caption: adminText,
+        });
+      } else {
+        await bot.telegram.sendMessage(ADMIN_ID, adminText);
+      }
+    } catch (err) {
+      console.error('Failed to send message to admin:', err);
+    }
+    await ctx.reply(
+      state.lang === 'en'
+        ? 'Your application has been received. Feel free to reach out if you have any questions.'
+        : state.lang === 'uk'
+        ? 'Вашу заявку прийнято. Якщо у вас виникнуть запитання — не соромтеся звертатися.'
+        : 'La tua candidatura è stata ricevuta. Per qualsiasi domanda, non esitare a contattarci.',
+    );
+    delete userStates[ctx.from.id];
   });
+});
+
+// Handle custom purpose text after 'purpose_other'
+bot.on('text', async (ctx) => {
+  const state = userStates[ctx.from.id];
+  if (!state || !state.awaitingPurposeText) return;
+  state.data.purpose = ctx.message.text.trim();
+  state.awaitingPurposeText = false;
+  state.waitingForPurpose = false;
+
+  // Send to admin
+  let adminText = `New casting application (${
+    state.lang === 'en' ? 'English' : state.lang === 'uk' ? 'Ukrainian' : 'Italian'
+  }):\n`;
+  if (state.data.purpose) {
+    adminText += `Purpose: ${state.data.purpose}\n`;
+  }
+  adminText += state.data.formText || '';
+  try {
+    if (state.data.photoFileId) {
+      await bot.telegram.sendPhoto(ADMIN_ID, state.data.photoFileId, {
+        caption: adminText,
+      });
+    } else {
+      await bot.telegram.sendMessage(ADMIN_ID, adminText);
+    }
+  } catch (err) {
+    console.error('Failed to send message to admin:', err);
+  }
+  await ctx.reply(
+    state.lang === 'en'
+      ? 'Your application has been received. Feel free to reach out if you have any questions.'
+      : state.lang === 'uk'
+      ? 'Вашу заявку прийнято. Якщо у вас виникнуть запитання — не соромтеся звертатися.'
+      : 'La tua candidatura è stata ricevuta. Per qualsiasi domanda, non esitare a contattarci.',
+  );
+  delete userStates[ctx.from.id];
 });
 
 bot.launch().then(() => {
