@@ -315,27 +315,21 @@ bot.on('photo', async (ctx) => {
   const options = PURPOSE_OPTIONS[state.lang];
   await ctx.reply(
     state.lang === 'en'
-      ? 'What are you applying for? (Choose one or skip)'
+      ? 'What are you applying for? (Choose one)'
       : state.lang === 'uk'
-      ? 'З якою метою ви заповнюєте анкету? (Оберіть один варіант або пропустіть)'
-      : "Per quale motivo stai inviando la candidatura? (Scegli un'opzione o salta)",
+      ? 'З якою метою ви заповнюєте анкету? (Оберіть один варіант)'
+      : "Per quale motivo stai inviando la candidatura? (Scegli un'opzione)",
     Markup.inlineKeyboard([
       [Markup.button.callback(options[0], 'purpose_0')],
       [Markup.button.callback(options[1], 'purpose_1')],
       [Markup.button.callback(options[2], 'purpose_2')],
       [Markup.button.callback(options[3], 'purpose_other')],
-      [
-        Markup.button.callback(
-          state.lang === 'en' ? 'Skip' : state.lang === 'uk' ? 'Пропустити' : 'Salta',
-          'purpose_skip',
-        ),
-      ],
     ]),
   );
 });
 
 // Handle purpose button actions
-['purpose_0', 'purpose_1', 'purpose_2', 'purpose_other', 'purpose_skip'].forEach((action, idx) => {
+['purpose_0', 'purpose_1', 'purpose_2', 'purpose_other'].forEach((action, idx) => {
   bot.action(action, async (ctx) => {
     const state = userStates[ctx.from.id];
     if (!state || !state.waitingForPurpose) return;
@@ -352,8 +346,6 @@ bot.on('photo', async (ctx) => {
           : 'Per favore, descrivi il motivo:',
       );
       return;
-    } else if (action === 'purpose_skip') {
-      purpose = '';
     } else {
       purpose = options[idx];
     }
