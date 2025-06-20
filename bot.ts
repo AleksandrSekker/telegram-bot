@@ -3,16 +3,16 @@ import { config } from 'dotenv';
 
 config();
 const bot = new Telegraf(process.env.BOT_TOKEN!);
-const textStep1En = `Hi,\nwe're Sekker Model Group.\nScouting new faces, freelancers, and model couples for global placements and exclusive project work.\nLet's start — choose your language.`;
-const textStep1Uk = `Привіт!\nМи — Sekker Model Group.\nШукаємо нові обличчя, фриланс-моделей та модельні пари для міжнародних контрактів і ексклюзивних проєктів.\nПочнемо — оберіть мову.`;
-const textStep1It = `Ciao!\nSiamo Sekker Model Group.\nCerchiamo nuovi volti, modelli freelance e coppie di modelli per progetti esclusivi e collaborazioni internazionali.\nIniziamo — scegli la tua lingua.`;
+const textStep1En = `Hi,\n  we're Sekker Model Group.\nScouting new faces, freelancers, and model couples for global placements and exclusive project work.\nLet's start — choose your language.`;
+const textStep1Uk = `Привіт!\n  Ми — Sekker Model Group.\nШукаємо нові обличчя, фриланс-моделей та модельні пари для міжнародних контрактів і ексклюзивних проєктів.\nПочнемо — оберіть мову.`;
+const textStep1It = `Ciao!\n  Siamo Sekker Model Group.\nCerchiamo nuovi volti, modelli freelance e coppie di modelli per progetti esclusivi e collaborazioni internazionali.\nIniziamo — scegli la tua lingua.`;
 
 const ukText =
-  'Ми працюємо з новими обличчями, фрилансерами та модельними парами. Допомагаємо знайти\nміжнародні контракти та роботу в локальних проєктах.\nЯкщо твій зріст від 170 см і тобі цікаво працювати моделлю — заповни форму, щоб продовжити';
+  'Ми працюємо з новими обличчями, фрилансерами та модельними парами. Допомагаємо знайти\nміжнародні контракти та роботу в локальних проєктах.\n  Якщо твій зріст від 170 см і тобі цікаво працювати моделлю — заповни форму, щоб продовжити';
 const enText =
-  "We develop and manage new faces, freelancers, and model couples, creating tailored pathways through\nglobal placements and exclusive projects.\nIf you're 170 cm or taller and interested in modeling, fill out the form to apply.";
+  "We develop and manage new faces, freelancers, and model couples, creating tailored pathways through\nglobal placements and exclusive projects.\n  If you're 170 cm or taller and interested in modeling, fill out the form to apply.";
 const itText =
-  'Sviluppiamo e rappresentiamo nuovi volti, modelli freelance e coppie di modelli, creando percorsi\npersonalizzati attraverso collaborazioni internazionali e progetti esclusivi.\nSe sei alto/a almeno 170 cm e sei interessato/a al mondo della moda, compila il modulo per candidarti.';
+  'Sviluppiamo e rappresentiamo nuovi volti, modelli freelance e coppie di modelli, creando percorsi\npersonalizzati attraverso collaborazioni internazionali e progetti esclusivi.\n  Se sei alto/a almeno 170 cm e sei interessato/a al mondo della moda, compila il modulo per candidarti.';
 
 const photoAgencyUrl = 'https://i.postimg.cc/mrb8gJFt/2025-06-19-20-27-17.png';
 
