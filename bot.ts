@@ -298,10 +298,10 @@ bot.on('text', async (ctx) => {
     }
     await ctx.reply(
       state.lang === 'en'
-        ? 'Your application has been received. Feel free to reach out if you have any questions.'
+        ? 'Your application has been received.\nFeel free to reach out if you have any questions.\n\nsmg.agencyinfo@gmail.com\n@sekker.modelgroup'
         : state.lang === 'uk'
-        ? 'Вашу заявку прийнято. Якщо у вас виникнуть запитання — не соромтеся звертатися.'
-        : 'La tua candidatura è stata ricevuta. Per qualsiasi domanda, non esitare a contattarci.',
+        ? 'Вашу заявку прийнято.\nЯкщо у вас виникнуть запитання — не соромтеся звертатися.\n\nsmg.agencyinfo@gmail.com\n@sekker.modelgroup'
+        : 'La tua candidatura è stata ricevuta.\nPer qualsiasi domanda, non esitare a contattarci.\n\nsmg.agencyinfo@gmail.com\n@sekker.modelgroup',
     );
     delete userStates[ctx.from.id];
     return;
@@ -417,10 +417,10 @@ bot.on('photo', async (ctx) => {
     }
     await ctx.reply(
       state.lang === 'en'
-        ? 'Your application has been received. Feel free to reach out if you have any questions.'
+        ? 'Your application has been received.\nFeel free to reach out if you have any questions.\n\nsmg.agencyinfo@gmail.com\n@sekker.modelgroup'
         : state.lang === 'uk'
-        ? 'Вашу заявку прийнято. Якщо у вас виникнуть запитання — не соромтеся звертатися.'
-        : 'La tua candidatura è stata ricevuta. Per qualsiasi domanda, non esitare a contattarci.',
+        ? 'Вашу заявку прийнято.\nЯкщо у вас виникнуть запитання — не соромтеся звертатися.\n\nsmg.agencyinfo@gmail.com\n@sekker.modelgroup'
+        : 'La tua candidatura è stata ricevuta.\nPer qualsiasi domanda, non esitare a contattarci.\n\nsmg.agencyinfo@gmail.com\n@sekker.modelgroup',
     );
     delete userStates[ctx.from.id];
   });
