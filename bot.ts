@@ -18,7 +18,7 @@ const photoAgencyUrl = 'https://i.postimg.cc/mrb8gJFt/2025-06-19-20-27-17.png';
 
 const ADMIN_ID = process.env.ADMIN_ID!;
 const ALLOWED_CHANNEL_ID = 2933607216;
-const ALLOWED_THREAD_ID = 2;
+const ALLOWED_THREAD_ID = 3;
 
 // Helper function to check if message is from allowed thread
 function isFromAllowedThread(ctx: any): boolean {
