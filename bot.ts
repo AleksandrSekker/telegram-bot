@@ -2,6 +2,7 @@ import { Markup, Telegraf } from 'telegraf';
 import { config } from 'dotenv';
 
 config();
+
 const bot = new Telegraf(process.env.BOT_TOKEN!);
 const textStep1En = `Hi,\nwe're Sekker Model Group.\nScouting new faces, freelancers, and model couples for global placements and exclusive project work.\nLet's start — choose your language.`;
 const textStep1Uk = `Привіт!\nМи — Sekker Model Group.\nШукаємо нові обличчя, фриланс-моделей та модельні пари для міжнародних контрактів і ексклюзивних проєктів.\nПочнемо — оберіть мову.`;
