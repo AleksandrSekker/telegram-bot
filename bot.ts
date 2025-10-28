@@ -22,17 +22,39 @@ const ALLOWED_THREAD_ID = 3;
 
 // Helper function to check if message is from allowed thread
 function isFromAllowedThread(ctx: any): boolean {
+  // Debug logging (remove this after testing)
+  console.log('Debug - Chat ID:', ctx.chat?.id);
+  console.log('Debug - Chat type:', ctx.chat?.type);
+  console.log('Debug - Message thread ID:', ctx.message?.message_thread_id);
+  console.log('Debug - Callback query message thread ID:', ctx.callbackQuery?.message?.message_thread_id);
+
   // If it's a private message (not in a channel), allow it
   if (!ctx.chat || ctx.chat.type === 'private') {
+    console.log('Debug - Allowing private message');
     return true;
   }
 
-  // If it's in the allowed channel and thread, allow it
-  if (ctx.chat.id === ALLOWED_CHANNEL_ID && ctx.message?.message_thread_id === ALLOWED_THREAD_ID) {
+  // For callback queries, check the original message's thread
+  if (ctx.callbackQuery && ctx.callbackQuery.message) {
+    const message = ctx.callbackQuery.message;
+    if (message.chat.id === ALLOWED_CHANNEL_ID && message.message_thread_id === ALLOWED_THREAD_ID) {
+      console.log('Debug - Allowing callback query from allowed thread');
+      return true;
+    }
+  }
+
+  // For regular messages, check the message thread
+  if (
+    ctx.message &&
+    ctx.message.chat.id === ALLOWED_CHANNEL_ID &&
+    ctx.message.message_thread_id === ALLOWED_THREAD_ID
+  ) {
+    console.log('Debug - Allowing message from allowed thread');
     return true;
   }
 
   // Otherwise, block it
+  console.log('Debug - Blocking message');
   return false;
 }
 
