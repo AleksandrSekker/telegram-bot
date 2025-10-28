@@ -17,6 +17,24 @@ const itText =
 const photoAgencyUrl = 'https://i.postimg.cc/mrb8gJFt/2025-06-19-20-27-17.png';
 
 const ADMIN_ID = process.env.ADMIN_ID!;
+const ALLOWED_CHANNEL_ID = 2933607216;
+const ALLOWED_THREAD_ID = 2;
+
+// Helper function to check if message is from allowed thread
+function isFromAllowedThread(ctx: any): boolean {
+  // If it's a private message (not in a channel), allow it
+  if (!ctx.chat || ctx.chat.type === 'private') {
+    return true;
+  }
+
+  // If it's in the allowed channel and thread, allow it
+  if (ctx.chat.id === ALLOWED_CHANNEL_ID && ctx.message?.message_thread_id === ALLOWED_THREAD_ID) {
+    return true;
+  }
+
+  // Otherwise, block it
+  return false;
+}
 
 const PURPOSE_OPTIONS = {
   en: [
@@ -116,8 +134,12 @@ const userStates: Record<
   }
 > = {};
 
-bot.start((ctx) =>
-  ctx.reply(
+bot.start((ctx) => {
+  if (!isFromAllowedThread(ctx)) {
+    return; // Ignore messages from other threads/channels
+  }
+
+  return ctx.reply(
     textStep1En,
     Markup.inlineKeyboard([
       [
@@ -126,10 +148,14 @@ bot.start((ctx) =>
         Markup.button.callback('🇮🇹 Italiano', 'italian'),
       ],
     ]),
-  ),
-);
+  );
+});
 
 bot.action('english', async (ctx) => {
+  if (!isFromAllowedThread(ctx)) {
+    return; // Ignore messages from other threads/channels
+  }
+
   await ctx.answerCbQuery();
   await ctx.replyWithPhoto(
     { url: photoAgencyUrl },
@@ -143,6 +169,10 @@ bot.action('english', async (ctx) => {
 });
 
 bot.action('ukrainian', async (ctx) => {
+  if (!isFromAllowedThread(ctx)) {
+    return; // Ignore messages from other threads/channels
+  }
+
   await ctx.answerCbQuery();
   await ctx.replyWithPhoto(
     { url: photoAgencyUrl },
@@ -156,6 +186,10 @@ bot.action('ukrainian', async (ctx) => {
 });
 
 bot.action('italian', async (ctx) => {
+  if (!isFromAllowedThread(ctx)) {
+    return; // Ignore messages from other threads/channels
+  }
+
   await ctx.answerCbQuery();
   await ctx.replyWithPhoto(
     { url: photoAgencyUrl },
@@ -169,6 +203,10 @@ bot.action('italian', async (ctx) => {
 });
 
 bot.action('back_en', async (ctx) => {
+  if (!isFromAllowedThread(ctx)) {
+    return; // Ignore messages from other threads/channels
+  }
+
   await ctx.answerCbQuery();
   await ctx.reply(
     textStep1En,
@@ -183,6 +221,10 @@ bot.action('back_en', async (ctx) => {
 });
 
 bot.action('back_uk', async (ctx) => {
+  if (!isFromAllowedThread(ctx)) {
+    return; // Ignore messages from other threads/channels
+  }
+
   await ctx.answerCbQuery();
   await ctx.reply(
     textStep1Uk,
@@ -197,6 +239,10 @@ bot.action('back_uk', async (ctx) => {
 });
 
 bot.action('back_it', async (ctx) => {
+  if (!isFromAllowedThread(ctx)) {
+    return; // Ignore messages from other threads/channels
+  }
+
   await ctx.answerCbQuery();
   await ctx.reply(
     textStep1It,
@@ -211,6 +257,10 @@ bot.action('back_it', async (ctx) => {
 });
 
 bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
+  if (!isFromAllowedThread(ctx)) {
+    return; // Ignore messages from other threads/channels
+  }
+
   await ctx.answerCbQuery();
   let lang: 'en' | 'uk' | 'it' = 'en';
   if (ctx.match[0] === 'casting_uk') lang = 'uk';
@@ -266,6 +316,10 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
 
 // Handle custom purpose text and form answers in a single handler
 bot.on('text', async (ctx) => {
+  if (!isFromAllowedThread(ctx)) {
+    return; // Ignore messages from other threads/channels
+  }
+
   const state = userStates[ctx.from.id];
   if (!state) return;
 
@@ -346,6 +400,10 @@ bot.on('text', async (ctx) => {
 
 // Handle photo upload after form
 bot.on('photo', async (ctx) => {
+  if (!isFromAllowedThread(ctx)) {
+    return; // Ignore messages from other threads/channels
+  }
+
   const state = userStates[ctx.from.id];
   if (!state || !state.waitingForPhoto) return;
   const photoFileId = ctx.message.photo[ctx.message.photo.length - 1].file_id;
@@ -373,6 +431,10 @@ bot.on('photo', async (ctx) => {
 // Handle purpose button actions
 ['purpose_0', 'purpose_1', 'purpose_2', 'purpose_other'].forEach((action, idx) => {
   bot.action(action, async (ctx) => {
+    if (!isFromAllowedThread(ctx)) {
+      return; // Ignore messages from other threads/channels
+    }
+
     const state = userStates[ctx.from.id];
     if (!state || !state.waitingForPurpose) return;
     await ctx.answerCbQuery();
