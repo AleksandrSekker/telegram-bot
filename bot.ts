@@ -23,17 +23,8 @@ const ALLOWED_THREAD_ID = parseInt(process.env.ALLOWED_THREAD_ID!);
 
 // Helper function to check if message is from allowed thread
 function isFromAllowedThread(ctx: any): boolean {
-  // Debug logging (remove this after testing)
-  console.log('Debug - Chat ID:', ctx.chat?.id);
-  console.log('Debug - Chat type:', ctx.chat?.type);
-  console.log('Debug - Message thread ID:', ctx.message?.message_thread_id);
-  console.log('Debug - Callback query message thread ID:', ctx.callbackQuery?.message?.message_thread_id);
-  console.log('Debug - ALLOWED_CHANNEL_ID:', ALLOWED_CHANNEL_ID);
-  console.log('Debug - ALLOWED_THREAD_ID:', ALLOWED_THREAD_ID);
-
   // If it's a private message (not in a channel), allow it
   if (!ctx.chat || ctx.chat.type === 'private') {
-    console.log('Debug - Allowing private message');
     return true;
   }
 
@@ -41,7 +32,6 @@ function isFromAllowedThread(ctx: any): boolean {
   if (ctx.callbackQuery && ctx.callbackQuery.message) {
     const message = ctx.callbackQuery.message;
     if (message.chat.id === ALLOWED_CHANNEL_ID && message.message_thread_id === ALLOWED_THREAD_ID) {
-      console.log('Debug - Allowing callback query from allowed thread');
       return true;
     }
   }
@@ -52,12 +42,10 @@ function isFromAllowedThread(ctx: any): boolean {
     ctx.message.chat.id === ALLOWED_CHANNEL_ID &&
     ctx.message.message_thread_id === ALLOWED_THREAD_ID
   ) {
-    console.log('Debug - Allowing message from allowed thread');
     return true;
   }
 
   // Otherwise, block it
-  console.log('Debug - Blocking message');
   return false;
 }
 
@@ -156,24 +144,50 @@ const userStates: Record<
     waitingForForm: boolean;
     waitingForPurpose?: boolean;
     waitingForPhoto?: boolean;
+    lastActivity: number;
   }
 > = {};
 
-bot.start((ctx) => {
-  if (!isFromAllowedThread(ctx)) {
-    return; // Ignore messages from other threads/channels
-  }
+// Clean up inactive sessions (older than 1 hour)
+setInterval(() => {
+  const now = Date.now();
+  const oneHour = 60 * 60 * 1000;
 
-  return ctx.reply(
-    textStep1En,
-    Markup.inlineKeyboard([
-      [
-        Markup.button.callback('🇺🇸 English', 'english'),
-        Markup.button.callback('🇺🇦 Українська', 'ukrainian'),
-        Markup.button.callback('🇮🇹 Italiano', 'italian'),
-      ],
-    ]),
-  );
+  Object.keys(userStates).forEach((userId) => {
+    const state = userStates[parseInt(userId)];
+    if (state && now - state.lastActivity > oneHour) {
+      delete userStates[parseInt(userId)];
+      console.log(`Cleaned up inactive session for user ${userId}`);
+    }
+  });
+}, 30 * 60 * 1000); // Check every 30 minutes
+
+bot.start(async (ctx) => {
+  try {
+    if (!isFromAllowedThread(ctx)) {
+      return; // Ignore messages from other threads/channels
+    }
+
+    // Send response privately to the user
+    await ctx.telegram.sendMessage(
+      ctx.from.id,
+      textStep1En,
+      Markup.inlineKeyboard([
+        [
+          Markup.button.callback('🇺🇸 English', 'english'),
+          Markup.button.callback('🇺🇦 Українська', 'ukrainian'),
+          Markup.button.callback('🇮🇹 Italiano', 'italian'),
+        ],
+      ]),
+    );
+  } catch (error) {
+    console.error('Error in start command:', error);
+    try {
+      await ctx.telegram.sendMessage(ctx.from.id, 'Sorry, something went wrong. Please try again later.');
+    } catch (sendError) {
+      console.error('Failed to send error message:', sendError);
+    }
+  }
 });
 
 bot.action('english', async (ctx) => {
@@ -182,7 +196,8 @@ bot.action('english', async (ctx) => {
   }
 
   await ctx.answerCbQuery();
-  await ctx.replyWithPhoto(
+  await ctx.telegram.sendPhoto(
+    ctx.from.id,
     { url: photoAgencyUrl },
     {
       caption: enText,
@@ -199,7 +214,8 @@ bot.action('ukrainian', async (ctx) => {
   }
 
   await ctx.answerCbQuery();
-  await ctx.replyWithPhoto(
+  await ctx.telegram.sendPhoto(
+    ctx.from.id,
     { url: photoAgencyUrl },
     {
       caption: ukText,
@@ -216,7 +232,8 @@ bot.action('italian', async (ctx) => {
   }
 
   await ctx.answerCbQuery();
-  await ctx.replyWithPhoto(
+  await ctx.telegram.sendPhoto(
+    ctx.from.id,
     { url: photoAgencyUrl },
     {
       caption: itText,
@@ -233,7 +250,8 @@ bot.action('back_en', async (ctx) => {
   }
 
   await ctx.answerCbQuery();
-  await ctx.reply(
+  await ctx.telegram.sendMessage(
+    ctx.from.id,
     textStep1En,
     Markup.inlineKeyboard([
       [
@@ -251,7 +269,8 @@ bot.action('back_uk', async (ctx) => {
   }
 
   await ctx.answerCbQuery();
-  await ctx.reply(
+  await ctx.telegram.sendMessage(
+    ctx.from.id,
     textStep1Uk,
     Markup.inlineKeyboard([
       [
@@ -269,7 +288,8 @@ bot.action('back_it', async (ctx) => {
   }
 
   await ctx.answerCbQuery();
-  await ctx.reply(
+  await ctx.telegram.sendMessage(
+    ctx.from.id,
     textStep1It,
     Markup.inlineKeyboard([
       [
@@ -290,7 +310,14 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
   let lang: 'en' | 'uk' | 'it' = 'en';
   if (ctx.match[0] === 'casting_uk') lang = 'uk';
   if (ctx.match[0] === 'casting_it') lang = 'it';
-  userStates[ctx.from.id] = { step: 0, data: {}, lang, awaitingPurposeText: false, waitingForForm: true };
+  userStates[ctx.from.id] = {
+    step: 0,
+    data: {},
+    lang,
+    awaitingPurposeText: false,
+    waitingForForm: true,
+    lastActivity: Date.now(),
+  };
 
   // Form texts for each language
   const formTexts = {
@@ -335,7 +362,7 @@ bot.action(['casting_en', 'casting_uk', 'casting_it'], async (ctx) => {
       '\nAggiungi un link al tuo book e ai tuoi snaps',
   };
 
-  await ctx.reply(formTexts[lang]);
+  await ctx.telegram.sendMessage(ctx.from.id, formTexts[lang]);
   userStates[ctx.from.id].waitingForForm = true;
 });
 
@@ -347,6 +374,9 @@ bot.on('text', async (ctx) => {
 
   const state = userStates[ctx.from.id];
   if (!state) return;
+
+  // Update last activity
+  state.lastActivity = Date.now();
 
   // Handle custom purpose text
   if (state.awaitingPurposeText) {
@@ -375,7 +405,8 @@ bot.on('text', async (ctx) => {
     } catch (err) {
       console.error('Failed to send message to admin:', err);
     }
-    await ctx.reply(
+    await ctx.telegram.sendMessage(
+      ctx.from.id,
       state.lang === 'en'
         ? 'Your application has been received.\nFeel free to reach out if you have any questions.\n\nsmg.agencyinfo@gmail.com\n@sekker.modelgroup'
         : state.lang === 'uk'
@@ -394,7 +425,8 @@ bot.on('text', async (ctx) => {
     }
 
     if (!text.trim()) {
-      await ctx.reply(
+      await ctx.telegram.sendMessage(
+        ctx.from.id,
         state.lang === 'en'
           ? 'Please answer at least one question in text.'
           : state.lang === 'uk'
@@ -416,9 +448,9 @@ bot.on('text', async (ctx) => {
         : state.lang === 'uk'
         ? 'Будь ласка, прикріпіть фото вашого обличчя без макіяжу та фільтрів.\nЗробіть його вдень, повернувши обличчя до вікна при природному освітленні.'
         : 'Ti preghiamo di allegare una foto del tuo viso senza trucco né filtri.\nScattala durante il giorno, rivolto/a verso una finestra con luce naturale.';
-    await ctx.reply(photoPrompt);
-    await ctx.replyWithPhoto({ url: 'https://i.postimg.cc/mgF09tjK/IMG-2265.jpg' });
-    await ctx.replyWithPhoto({ url: 'https://i.postimg.cc/k53LvqhG/IMG-2267.jpg' });
+    await ctx.telegram.sendMessage(ctx.from.id, photoPrompt);
+    await ctx.telegram.sendPhoto(ctx.from.id, { url: 'https://i.postimg.cc/mgF09tjK/IMG-2265.jpg' });
+    await ctx.telegram.sendPhoto(ctx.from.id, { url: 'https://i.postimg.cc/k53LvqhG/IMG-2267.jpg' });
     return;
   }
 });
@@ -431,6 +463,9 @@ bot.on('photo', async (ctx) => {
 
   const state = userStates[ctx.from.id];
   if (!state || !state.waitingForPhoto) return;
+
+  // Update last activity
+  state.lastActivity = Date.now();
   const photoFileId = ctx.message.photo[ctx.message.photo.length - 1].file_id;
   state.data.photoFileId = photoFileId;
   state.waitingForPhoto = false;
@@ -438,7 +473,8 @@ bot.on('photo', async (ctx) => {
 
   // Show purpose options as inline keyboard
   const options = PURPOSE_OPTIONS[state.lang];
-  await ctx.reply(
+  await ctx.telegram.sendMessage(
+    ctx.from.id,
     state.lang === 'en'
       ? 'What are you applying for? (Choose one)'
       : state.lang === 'uk'
@@ -462,12 +498,17 @@ bot.on('photo', async (ctx) => {
 
     const state = userStates[ctx.from.id];
     if (!state || !state.waitingForPurpose) return;
+
+    // Update last activity
+    state.lastActivity = Date.now();
+
     await ctx.answerCbQuery();
     const options = PURPOSE_OPTIONS[state.lang];
     let purpose = '';
     if (action === 'purpose_other') {
       state.awaitingPurposeText = true;
-      await ctx.reply(
+      await ctx.telegram.sendMessage(
+        ctx.from.id,
         state.lang === 'en'
           ? 'Please describe your purpose:'
           : state.lang === 'uk'
@@ -502,7 +543,8 @@ bot.on('photo', async (ctx) => {
     } catch (err) {
       console.error('Failed to send message to admin:', err);
     }
-    await ctx.reply(
+    await ctx.telegram.sendMessage(
+      ctx.from.id,
       state.lang === 'en'
         ? 'Your application has been received.\nFeel free to reach out if you have any questions.\n\nsmg.agencyinfo@gmail.com\n@sekker.modelgroup'
         : state.lang === 'uk'
