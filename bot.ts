@@ -18,8 +18,8 @@ const itText =
 const photoAgencyUrl = 'https://i.postimg.cc/mrb8gJFt/2025-06-19-20-27-17.png';
 
 const ADMIN_ID = process.env.ADMIN_ID!;
-const ALLOWED_CHANNEL_ID = process.env.ALLOWED_CHANNEL_ID!;
-const ALLOWED_THREAD_ID = process.env.ALLOWED_THREAD_ID!;
+const ALLOWED_CHANNEL_ID = parseInt(process.env.ALLOWED_CHANNEL_ID!);
+const ALLOWED_THREAD_ID = parseInt(process.env.ALLOWED_THREAD_ID!);
 
 // Helper function to check if message is from allowed thread
 function isFromAllowedThread(ctx: any): boolean {
@@ -28,6 +28,8 @@ function isFromAllowedThread(ctx: any): boolean {
   console.log('Debug - Chat type:', ctx.chat?.type);
   console.log('Debug - Message thread ID:', ctx.message?.message_thread_id);
   console.log('Debug - Callback query message thread ID:', ctx.callbackQuery?.message?.message_thread_id);
+  console.log('Debug - ALLOWED_CHANNEL_ID:', ALLOWED_CHANNEL_ID);
+  console.log('Debug - ALLOWED_THREAD_ID:', ALLOWED_THREAD_ID);
 
   // If it's a private message (not in a channel), allow it
   if (!ctx.chat || ctx.chat.type === 'private') {
